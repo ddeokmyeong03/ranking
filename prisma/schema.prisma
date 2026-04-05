@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Unit {
+  id        String   @id @default(cuid())
+  code      String   @unique @db.VarChar(6)
+  name      String
+  createdAt DateTime @default(now())
+
+  members    Member[]
+  teams      Team[]
+  hallOfFame HallOfFame[]
+}
+
+model Member {
+  id           String   @id @default(cuid())
+  unitId       String
+  nickname     String
+  passwordHash String
+  height       Float?
+  weight       Float?
+  level        Int      @default(1)
+  workoutStyle String[]
+  photoUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  unit                Unit                @relation(fields: [unitId], references: [id])
+  powerliftingRecords PowerliftingRecord[]
+  militaryRecords     MilitaryRecord[]
+  inbodyRecords       InbodyRecord[]
+  attendances         Attendance[]
+  achievements        MemberAchievement[]
+  teamMembers         TeamMember[]
+  provocationsFrom    Provocation[]       @relation("ProvocationsFrom")
+  provocationsTo      Provocation[]       @relation("ProvocationsTo")
+  dailyChallenges     DailyChallenge[]
+
+  @@unique([unitId, nickname])
+}
+
+model PowerliftingRecord {
+  id         String   @id @default(cuid())
+  memberId   String
+  benchPress Float
+  deadlift   Float
+  squat      Float
+  total      Float
+  score      Int
+  recordedAt DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([total])
+  @@index([memberId, recordedAt(sort: Desc)])
+}
+
+model MilitaryRecord {
+  id         String   @id @default(cuid())
+  memberId   String
+  runTime    Int
+  pushups    Int
+  situps     Int
+  grade      String
+  gradeScore Int
+  recordedAt DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([gradeScore])
+  @@index([memberId, recordedAt(sort: Desc)])
+}
+
+model InbodyRecord {
+  id              String   @id @default(cuid())
+  memberId        String
+  muscleMass      Float
+  bodyFatPct      Float
+  weight          Float
+  weightChangePct Float
+  recordedAt      DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([muscleMass])
+  @@index([memberId, recordedAt(sort: Desc)])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  memberId  String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, date])
+  @@index([memberId])
+}
+
+model Achievement {
+  id            String @id @default(cuid())
+  key           String @unique
+  nameKo        String
+  descriptionKo String
+  iconEmoji     String
+
+  members MemberAchievement[]
+}
+
+model MemberAchievement {
+  id            String   @id @default(cuid())
+  memberId      String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  member      Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([memberId, achievementId])
+}
+
+model Team {
+  id     String @id @default(cuid())
+  unitId String
+  name   String
+  color  String @default("#c9a84c")
+
+  unit    Unit         @relation(fields: [unitId], references: [id])
+  members TeamMember[]
+}
+
+model TeamMember {
+  id       String @id @default(cuid())
+  teamId   String
+  memberId String
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@unique([teamId, memberId])
+}
+
+model Provocation {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  message   String
+  createdAt DateTime @default(now())
+
+  from Member @relation("ProvocationsFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   Member @relation("ProvocationsTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@index([toId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model DailyChallenge {
+  id          String    @id @default(cuid())
+  memberId    String
+  challenge   String
+  drawnAt     DateTime  @default(now())
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+}
+
+model HallOfFame {
+  id         String   @id @default(cuid())
+  unitId     String
+  memberId   String
+  category   String
+  reason     String
+  recordedAt DateTime @default(now())
+
+  unit Unit @relation(fields: [unitId], references: [id])
+
+  @@index([unitId, category])
+}
