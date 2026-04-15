@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isNewUnit = searchParams.get("new") === "1";
@@ -175,5 +175,13 @@ export default function SignupPage() {
         </Link>
       </p>
     </form>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="text-center text-gray-400 py-8">로딩 중...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }
