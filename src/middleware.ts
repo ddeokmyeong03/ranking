@@ -6,9 +6,10 @@ const PUBLIC_PATHS = [
   "/signup",
   "/api/auth/login",
   "/api/auth/signup",
+  "/api/units", // 부대 생성은 비로그인 상태에서도 접근 가능한 부트스트랩 엔드포인트
 ];
 
-const ADMIN_PATHS = ["/admin", "/api/cycles", "/api/holidays", "/api/allowance-rates", "/api/units", "/api/members"];
+const ADMIN_PATHS = ["/admin", "/api/cycles", "/api/holidays", "/api/allowance-rates", "/api/members"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
