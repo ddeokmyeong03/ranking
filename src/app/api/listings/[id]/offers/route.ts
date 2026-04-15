@@ -31,7 +31,20 @@ export async function GET(
       orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json(offers);
+    // Fetch offerer assignment dates to display in UI
+    const assignmentIds = offers.map((o) => o.offererAssignmentId);
+    const assignments = await prisma.dutyAssignment.findMany({
+      where: { id: { in: assignmentIds } },
+      select: { id: true, date: true, dutyType: true },
+    });
+    const assignmentMap = Object.fromEntries(assignments.map((a) => [a.id, a]));
+
+    const offersWithAssignment = offers.map((o) => ({
+      ...o,
+      offererAssignment: assignmentMap[o.offererAssignmentId] ?? null,
+    }));
+
+    return NextResponse.json(offersWithAssignment);
   } catch (e: unknown) {
     if (e instanceof Error && e.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

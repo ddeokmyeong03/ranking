@@ -57,6 +57,18 @@ export default function RequestsPage() {
     }
   }
 
+  async function handleCancel(id: string) {
+    if (!confirm("보낸 변경 요청을 취소하시겠습니까?")) return;
+    const res = await fetch(`/api/requests/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      alert("요청이 취소되었습니다.");
+      load();
+    } else {
+      const data = await res.json();
+      alert(data.error ?? "취소에 실패했습니다.");
+    }
+  }
+
   const statusLabel = (s: string) =>
     s === "PENDING" ? "대기 중" : s === "APPROVED" ? "승인됨" : "거절됨";
 
@@ -133,9 +145,19 @@ export default function RequestsPage() {
                 <span className="text-sm font-medium text-gray-800">
                   {req.targetMember?.rank} {req.targetMember?.name}님에게
                 </span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor(req.status)}`}>
-                  {statusLabel(req.status)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor(req.status)}`}>
+                    {statusLabel(req.status)}
+                  </span>
+                  {req.status === "PENDING" && (
+                    <button
+                      onClick={() => handleCancel(req.id)}
+                      className="text-xs text-red-500 hover:text-red-700 underline"
+                    >
+                      취소
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="text-xs text-gray-500 space-y-1">
                 <div className="flex items-center gap-2">
@@ -149,6 +171,7 @@ export default function RequestsPage() {
                   <span>{format(new Date(req.targetAssignment.date), "M월 d일 (eee)", { locale: ko })}</span>
                 </div>
               </div>
+              {req.message && <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">{req.message}</p>}
             </div>
           ))
         )}

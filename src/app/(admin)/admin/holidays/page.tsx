@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Input } from "@/components/ui/Input";
@@ -22,13 +22,13 @@ export default function AdminHolidaysPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     fetch(`/api/holidays?year=${year}&month=${month}`)
       .then((r) => r.json())
       .then(setHolidays);
-  };
+  }, [year, month]);
 
-  useEffect(() => { load(); }, [year, month]);
+  useEffect(() => { load(); }, [load]);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();

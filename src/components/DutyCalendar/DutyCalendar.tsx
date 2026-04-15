@@ -11,7 +11,6 @@ import {
   format,
   isSameDay,
 } from "date-fns";
-import { ko } from "date-fns/locale";
 import { dutyTypeLabel } from "@/lib/utils";
 
 type AssignmentWithMember = DutyAssignment & {
@@ -35,6 +34,7 @@ interface DutyCalendarProps {
   holidays: Holiday[];
   listingDates?: ListingDate[];
   currentMemberId?: string;
+  onAssignmentClick?: (assignment: AssignmentWithMember) => void;
 }
 
 const DUTY_COLORS: Record<DutyType, string> = {
@@ -56,6 +56,7 @@ export function DutyCalendar({
   holidays,
   listingDates = [],
   currentMemberId,
+  onAssignmentClick,
 }: DutyCalendarProps) {
   const monthStart = startOfMonth(new Date(year, month - 1, 1));
   const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
@@ -104,7 +105,6 @@ export function DutyCalendar({
           const holiday = isHoliday(day);
           const listing = hasListing(day);
           const dayOfWeek = day.getDay();
-          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
           return (
             <div
@@ -140,11 +140,15 @@ export function DutyCalendar({
                 {dayAssignments.map((a) => {
                   const isMe = a.memberId === currentMemberId;
                   const colorClass = isMe ? MY_DUTY_COLORS[a.dutyType] : DUTY_COLORS[a.dutyType];
+                  const clickable = !!onAssignmentClick;
                   return (
                     <div
                       key={a.id}
-                      className={`px-1 py-0.5 rounded text-xs truncate ${colorClass}`}
+                      className={`px-1 py-0.5 rounded text-xs truncate ${colorClass} ${
+                        clickable ? "cursor-pointer hover:opacity-80 active:opacity-60" : ""
+                      }`}
                       title={`${dutyTypeLabel(a.dutyType)}: ${a.member.rank} ${a.member.name}`}
+                      onClick={clickable ? () => onAssignmentClick(a) : undefined}
                     >
                       {a.member.rank} {a.member.name}
                     </div>

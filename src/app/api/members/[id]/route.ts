@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireSession, requireAdmin } from "@/lib/session";
+import { requireSession } from "@/lib/session";
 import bcrypt from "bcryptjs";
 
 export async function PATCH(

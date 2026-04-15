@@ -102,3 +102,38 @@ export async function PATCH(
     return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await requireSession(req);
+    const { id } = await params;
+
+    const request = await prisma.dutyChangeRequest.findUnique({
+      where: { id },
+    });
+
+    if (!request) {
+      return NextResponse.json({ error: "요청을 찾을 수 없습니다." }, { status: 404 });
+    }
+
+    if (request.requesterId !== session.memberId) {
+      return NextResponse.json({ error: "본인이 보낸 요청만 취소할 수 있습니다." }, { status: 403 });
+    }
+
+    if (request.status !== "PENDING") {
+      return NextResponse.json({ error: "이미 처리된 요청은 취소할 수 없습니다." }, { status: 409 });
+    }
+
+    await prisma.dutyChangeRequest.delete({ where: { id } });
+
+    return NextResponse.json({ message: "요청이 취소되었습니다." });
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
+  }
+}

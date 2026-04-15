@@ -4,7 +4,6 @@ import {
   getTempSession,
   createSession,
   setSessionCookie,
-  clearSessionCookies,
 } from "@/lib/session";
 import { cookies } from "next/headers";
 
