@@ -1,39 +1,92 @@
-import { config } from "dotenv";
-config({ path: ".env.local" });
-config({ path: ".env" });
-
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import bcrypt from "bcryptjs";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
-
-const achievements = [
-  { key: "FIRST_RECORD",    nameKo: "첫 기록",        descriptionKo: "첫 번째 기록을 등록했습니다",           iconEmoji: "⭐" },
-  { key: "TIER_2",          nameKo: "헬린이 탈출",     descriptionKo: "총합 150kg을 돌파했습니다",             iconEmoji: "💯" },
-  { key: "TIER_5",          nameKo: "체단실 괴물",     descriptionKo: "총합 450kg을 돌파했습니다",             iconEmoji: "🔥" },
-  { key: "MILITARY_특급",   nameKo: "특급전사",        descriptionKo: "군사체력 특급을 달성했습니다",          iconEmoji: "💀" },
-  { key: "STREAK_7",        nameKo: "7일 연속",        descriptionKo: "7일 연속 출석했습니다",                 iconEmoji: "👑" },
-  { key: "STREAK_30",       nameKo: "한 달 전사",      descriptionKo: "30일 연속 출석했습니다",                iconEmoji: "🦁" },
-  { key: "PROVOCATION_SENT",nameKo: "도발의 달인",     descriptionKo: "3번 이상 도발을 보냈습니다",            iconEmoji: "😈" },
-  { key: "RANK_1",          nameKo: "랭킹 1위",        descriptionKo: "부대 파워리프팅 1위를 달성했습니다",    iconEmoji: "🥇" },
-  { key: "FIRST_INBODY",    nameKo: "인바디 도전",     descriptionKo: "첫 인바디를 등록했습니다",              iconEmoji: "📊" },
-  { key: "WEEKLY_KING",     nameKo: "이주의 갱신왕",   descriptionKo: "이번 주 기록 갱신 1위를 달성했습니다",  iconEmoji: "🏆" },
-];
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log("업적 시드 데이터 입력 중...");
-  for (const ach of achievements) {
-    await prisma.achievement.upsert({
-      where: { key: ach.key },
-      update: ach,
-      create: ach,
+  console.log("🌱 Seeding database...");
+
+  // Create a test unit
+  const unit = await prisma.unit.upsert({
+    where: { code: "TEST01" },
+    update: {},
+    create: {
+      name: "1사단 1연대 2대대",
+      code: "TEST01",
+    },
+  });
+
+  console.log("✅ Unit created:", unit.name, "code:", unit.code);
+
+  // Create admin member
+  const adminHash = await bcrypt.hash("admin1234", 12);
+  const admin = await prisma.member.upsert({
+    where: { militaryId: "22-00000001" },
+    update: {},
+    create: {
+      militaryId: "22-00000001",
+      passwordHash: adminHash,
+      name: "김관리",
+      rank: "중위",
+      position: "작전장교",
+      role: "UNIT_ADMIN",
+      unitId: unit.id,
+    },
+  });
+
+  console.log("✅ Admin created:", admin.rank, admin.name, "/ militaryId:", admin.militaryId);
+
+  // Create sample members
+  const memberData = [
+    { militaryId: "22-00000002", name: "이준호", rank: "소위" },
+    { militaryId: "22-00000003", name: "박지수", rank: "중사" },
+    { militaryId: "22-00000004", name: "최민준", rank: "하사" },
+    { militaryId: "22-00000005", name: "정서연", rank: "상사" },
+  ];
+
+  for (const m of memberData) {
+    const hash = await bcrypt.hash("password1234", 12);
+    await prisma.member.upsert({
+      where: { militaryId: m.militaryId },
+      update: {},
+      create: {
+        ...m,
+        passwordHash: hash,
+        unitId: unit.id,
+      },
     });
-    console.log(`  ✓ ${ach.iconEmoji} ${ach.nameKo}`);
+    console.log("✅ Member created:", m.rank, m.name);
   }
-  console.log("완료!");
+
+  // Create allowance rates
+  await prisma.allowanceRate.createMany({
+    data: [
+      {
+        unitId: unit.id,
+        dutyType: "WEEKDAY",
+        amountKRW: 40000,
+        effectiveFrom: new Date("2025-01-01"),
+      },
+      {
+        unitId: unit.id,
+        dutyType: "WEEKEND_DAY",
+        amountKRW: 60000,
+        effectiveFrom: new Date("2025-01-01"),
+      },
+      {
+        unitId: unit.id,
+        dutyType: "WEEKEND_NIGHT",
+        amountKRW: 80000,
+        effectiveFrom: new Date("2025-01-01"),
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log("✅ Allowance rates created");
+  console.log("\n📋 Login info:");
+  console.log("  Admin   - militaryId: 22-00000001, password: admin1234, unitCode: TEST01");
+  console.log("  Members - militaryId: 22-0000000X (X=2~5), password: password1234, unitCode: TEST01");
 }
 
 main()

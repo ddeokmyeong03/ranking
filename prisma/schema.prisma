@@ -6,185 +6,282 @@ datasource db {
   provider = "postgresql"
 }
 
+// =============================================
+// UNIT & ORGANIZATION
+// =============================================
+
 model Unit {
   id        String   @id @default(cuid())
-  code      String   @unique @db.VarChar(6)
   name      String
+  code      String   @unique
+  parentId  String?
+  parent    Unit?    @relation("UnitHierarchy", fields: [parentId], references: [id])
+  children  Unit[]   @relation("UnitHierarchy")
   createdAt DateTime @default(now())
 
-  members    Member[]
-  teams      Team[]
-  hallOfFame HallOfFame[]
+  members        Member[]
+  cycles         DutyCycle[]
+  assignments    DutyAssignment[]
+  holidays       UnitHoliday[]
+  allowanceRates AllowanceRate[]
 }
+
+// =============================================
+// MEMBER (간부)
+// =============================================
 
 model Member {
-  id           String   @id @default(cuid())
-  unitId       String
-  nickname     String
-  passwordHash String
-  height       Float?
-  weight       Float?
-  level        Int      @default(1)
-  workoutStyle String[]
-  photoUrl     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String     @id @default(cuid())
+  militaryId       String     @unique
+  passwordHash     String
+  name             String
+  rank             String
+  position         String?
+  commissionDate   DateTime?
+  dischargeDate    DateTime?
+  role             MemberRole @default(USER)
+  unitId           String
+  unit             Unit       @relation(fields: [unitId], references: [id])
+  isActive         Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
-  unit                Unit                @relation(fields: [unitId], references: [id])
-  powerliftingRecords PowerliftingRecord[]
-  militaryRecords     MilitaryRecord[]
-  inbodyRecords       InbodyRecord[]
-  attendances         Attendance[]
-  achievements        MemberAchievement[]
-  teamMembers         TeamMember[]
-  provocationsFrom    Provocation[]       @relation("ProvocationsFrom")
-  provocationsTo      Provocation[]       @relation("ProvocationsTo")
-  dailyChallenges     DailyChallenge[]
-
-  @@unique([unitId, nickname])
+  trustedDevices   TrustedDevice[]
+  notifications    Notification[]
+  assignments      DutyAssignment[]
+  cycleEntries     DutyCycleMember[]
+  changeListings   DutyChangeListing[]
+  changeOffers     DutyChangeOffer[]
+  sentRequests     DutyChangeRequest[]  @relation("Requester")
+  receivedRequests DutyChangeRequest[]  @relation("RequestTarget")
 }
 
-model PowerliftingRecord {
-  id         String   @id @default(cuid())
-  memberId   String
-  benchPress Float
-  deadlift   Float
-  squat      Float
-  total      Float
-  score      Int
-  recordedAt DateTime @default(now())
-
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@index([memberId])
-  @@index([total])
-  @@index([memberId, recordedAt(sort: Desc)])
+enum MemberRole {
+  UNIT_ADMIN
+  USER
 }
 
-model MilitaryRecord {
-  id         String   @id @default(cuid())
-  memberId   String
-  runTime    Int
-  pushups    Int
-  situps     Int
-  grade      String
-  gradeScore Int
-  recordedAt DateTime @default(now())
+// =============================================
+// TRUSTED DEVICE (자동 로그인)
+// =============================================
 
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@index([memberId])
-  @@index([gradeScore])
-  @@index([memberId, recordedAt(sort: Desc)])
-}
-
-model InbodyRecord {
-  id              String   @id @default(cuid())
-  memberId        String
-  muscleMass      Float
-  bodyFatPct      Float
-  weight          Float
-  weightChangePct Float
-  recordedAt      DateTime @default(now())
-
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@index([memberId])
-  @@index([muscleMass])
-  @@index([memberId, recordedAt(sort: Desc)])
-}
-
-model Attendance {
-  id        String   @id @default(cuid())
-  memberId  String
-  date      DateTime @db.Date
-  createdAt DateTime @default(now())
-
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
-
-  @@unique([memberId, date])
-  @@index([memberId])
-}
-
-model Achievement {
-  id            String @id @default(cuid())
-  key           String @unique
-  nameKo        String
-  descriptionKo String
-  iconEmoji     String
-
-  members MemberAchievement[]
-}
-
-model MemberAchievement {
-  id            String   @id @default(cuid())
-  memberId      String
-  achievementId String
-  unlockedAt    DateTime @default(now())
-
-  member      Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  achievement Achievement @relation(fields: [achievementId], references: [id])
-
-  @@unique([memberId, achievementId])
-}
-
-model Team {
-  id     String @id @default(cuid())
-  unitId String
-  name   String
-  color  String @default("#c9a84c")
-
-  unit    Unit         @relation(fields: [unitId], references: [id])
-  members TeamMember[]
-}
-
-model TeamMember {
-  id       String @id @default(cuid())
-  teamId   String
-  memberId String
-
-  team   Team   @relation(fields: [teamId], references: [id])
-  member Member @relation(fields: [memberId], references: [id])
-
-  @@unique([teamId, memberId])
-}
-
-model Provocation {
-  id        String   @id @default(cuid())
-  fromId    String
-  toId      String
-  message   String
-  createdAt DateTime @default(now())
-
-  from Member @relation("ProvocationsFrom", fields: [fromId], references: [id], onDelete: Cascade)
-  to   Member @relation("ProvocationsTo", fields: [toId], references: [id], onDelete: Cascade)
-
-  @@index([toId])
-  @@index([createdAt(sort: Desc)])
-}
-
-model DailyChallenge {
-  id          String    @id @default(cuid())
+model TrustedDevice {
+  id          String   @id @default(cuid())
   memberId    String
-  challenge   String
-  drawnAt     DateTime  @default(now())
-  completed   Boolean   @default(false)
-  completedAt DateTime?
-
-  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  deviceToken String   @unique
+  userAgent   String?
+  lastUsedAt  DateTime @default(now())
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
 
   @@index([memberId])
 }
 
-model HallOfFame {
+// =============================================
+// DUTY CYCLE (당직 사이클)
+// =============================================
+
+model DutyCycle {
   id         String   @id @default(cuid())
   unitId     String
+  unit       Unit     @relation(fields: [unitId], references: [id])
+  name       String
+  startDate  DateTime @db.Date
+  endDate    DateTime @db.Date
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  cycleMembers DutyCycleMember[]
+  assignments  DutyAssignment[]
+}
+
+model DutyCycleMember {
+  id         String    @id @default(cuid())
+  cycleId    String
+  cycle      DutyCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   memberId   String
-  category   String
-  reason     String
-  recordedAt DateTime @default(now())
+  member     Member    @relation(fields: [memberId], references: [id])
+  sortOrder  Int
+  isExcluded Boolean   @default(false)
 
-  unit Unit @relation(fields: [unitId], references: [id])
+  @@unique([cycleId, memberId])
+  @@index([cycleId, sortOrder])
+}
 
-  @@index([unitId, category])
+// =============================================
+// HOLIDAYS (공휴일/전투휴무)
+// =============================================
+
+model UnitHoliday {
+  id          String      @id @default(cuid())
+  unitId      String
+  unit        Unit        @relation(fields: [unitId], references: [id])
+  date        DateTime    @db.Date
+  type        HolidayType
+  name        String?
+  createdById String?
+  createdAt   DateTime    @default(now())
+
+  @@unique([unitId, date])
+  @@index([unitId, date])
+}
+
+enum HolidayType {
+  PUBLIC_HOLIDAY
+  COMBAT_REST
+}
+
+// =============================================
+// DUTY ASSIGNMENT (당직 편성)
+// =============================================
+
+model DutyAssignment {
+  id               String    @id @default(cuid())
+  unitId           String
+  unit             Unit      @relation(fields: [unitId], references: [id])
+  cycleId          String?
+  cycle            DutyCycle? @relation(fields: [cycleId], references: [id])
+  memberId         String
+  member           Member    @relation(fields: [memberId], references: [id])
+  date             DateTime  @db.Date
+  dutyType         DutyType
+  isSwapped        Boolean   @default(false)
+  originalMemberId String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  changeListings   DutyChangeListing[]
+  incomingRequests DutyChangeRequest[]  @relation("TargetAssignment")
+  outgoingRequests DutyChangeRequest[]  @relation("RequesterAssignment")
+
+  @@unique([unitId, date, dutyType])
+  @@index([memberId])
+  @@index([unitId, date])
+}
+
+enum DutyType {
+  WEEKDAY
+  WEEKEND_DAY
+  WEEKEND_NIGHT
+}
+
+// =============================================
+// DUTY CHANGE LISTING (변경 희망 게시글)
+// =============================================
+
+model DutyChangeListing {
+  id           String        @id @default(cuid())
+  assignmentId String
+  assignment   DutyAssignment @relation(fields: [assignmentId], references: [id])
+  posterId     String
+  poster       Member        @relation(fields: [posterId], references: [id])
+  message      String?
+  status       ListingStatus @default(OPEN)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  offers DutyChangeOffer[]
+}
+
+enum ListingStatus {
+  OPEN
+  MATCHED
+  CLOSED
+}
+
+// =============================================
+// DUTY CHANGE OFFER (변경 신청)
+// =============================================
+
+model DutyChangeOffer {
+  id                   String      @id @default(cuid())
+  listingId            String
+  listing              DutyChangeListing @relation(fields: [listingId], references: [id])
+  offererId            String
+  offerer              Member      @relation(fields: [offererId], references: [id])
+  offererAssignmentId  String
+  status               OfferStatus @default(PENDING)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+}
+
+enum OfferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// =============================================
+// DUTY CHANGE REQUEST (직접 변경 요청)
+// =============================================
+
+model DutyChangeRequest {
+  id                      String        @id @default(cuid())
+  requesterId             String
+  requester               Member        @relation("Requester", fields: [requesterId], references: [id])
+  requesterAssignmentId   String
+  requesterAssignment     DutyAssignment @relation("RequesterAssignment", fields: [requesterAssignmentId], references: [id])
+  targetMemberId          String
+  targetMember            Member        @relation("RequestTarget", fields: [targetMemberId], references: [id])
+  targetAssignmentId      String
+  targetAssignment        DutyAssignment @relation("TargetAssignment", fields: [targetAssignmentId], references: [id])
+  message                 String?
+  status                  RequestStatus @default(PENDING)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// =============================================
+// ALLOWANCE RATES (수당 요율)
+// =============================================
+
+model AllowanceRate {
+  id            String    @id @default(cuid())
+  unitId        String
+  unit          Unit      @relation(fields: [unitId], references: [id])
+  dutyType      DutyType
+  amountKRW     Int
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([unitId, dutyType, effectiveFrom])
+}
+
+// =============================================
+// NOTIFICATIONS (알림)
+// =============================================
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  recipient   Member           @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  body        String
+  payload     Json?
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  @@index([recipientId, isRead, createdAt])
+}
+
+enum NotificationType {
+  DUTY_SCHEDULE_PUBLISHED
+  LISTING_NEW
+  LISTING_OFFER_RECEIVED
+  LISTING_OFFER_APPROVED
+  LISTING_OFFER_REJECTED
+  REQUEST_RECEIVED
+  REQUEST_APPROVED
+  REQUEST_REJECTED
+  SWAP_COMPLETED
 }
