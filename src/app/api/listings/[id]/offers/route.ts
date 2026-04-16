@@ -101,6 +101,38 @@ export async function POST(
       return NextResponse.json({ error: "이미 신청한 게시글입니다." }, { status: 409 });
     }
 
+    // 게시글 작성자(poster)가 제안자의 근무일에 휴가인지 확인
+    const posterLeave = await prisma.memberLeave.findFirst({
+      where: {
+        memberId: listing.posterId,
+        startDate: { lte: offererAssignment.date },
+        endDate: { gte: offererAssignment.date },
+      },
+    });
+    if (posterLeave) {
+      const leaveLabel = posterLeave.leaveType === "VACATION" ? "휴가" : "휴무";
+      return NextResponse.json(
+        { error: `게시글 작성자가 해당 날짜에 ${leaveLabel} 중이므로 교환할 수 없습니다.`, blockedByLeave: true },
+        { status: 409 }
+      );
+    }
+
+    // 신청자(offerer)가 게시글 근무일에 휴가인지 확인
+    const offererLeave = await prisma.memberLeave.findFirst({
+      where: {
+        memberId: session.memberId,
+        startDate: { lte: listing.assignment.date },
+        endDate: { gte: listing.assignment.date },
+      },
+    });
+    if (offererLeave) {
+      const leaveLabel = offererLeave.leaveType === "VACATION" ? "휴가" : "휴무";
+      return NextResponse.json(
+        { error: `본인이 해당 날짜에 ${leaveLabel} 중이므로 교환할 수 없습니다.`, blockedByLeave: true },
+        { status: 409 }
+      );
+    }
+
     const offer = await prisma.dutyChangeOffer.create({
       data: {
         listingId,

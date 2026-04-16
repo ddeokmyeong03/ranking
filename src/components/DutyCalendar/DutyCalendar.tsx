@@ -109,7 +109,7 @@ export function DutyCalendar({
           return (
             <div
               key={idx}
-              className={`min-h-[90px] p-1.5 border-b border-r ${
+              className={`min-h-[80px] p-1 border-b border-r ${
                 !isCurrentMonth ? "bg-gray-50" : "bg-white"
               } ${holiday ? "bg-yellow-50" : ""}`}
             >
@@ -144,13 +144,14 @@ export function DutyCalendar({
                   return (
                     <div
                       key={a.id}
-                      className={`px-1 py-0.5 rounded text-xs truncate ${colorClass} ${
+                      className={`px-1 py-0.5 rounded text-xs leading-tight ${colorClass} ${
                         clickable ? "cursor-pointer hover:opacity-80 active:opacity-60" : ""
                       }`}
                       title={`${dutyTypeLabel(a.dutyType)}: ${a.member.rank} ${a.member.name}`}
                       onClick={clickable ? () => onAssignmentClick(a) : undefined}
                     >
-                      {a.member.rank} {a.member.name}
+                      <span className="block opacity-75">{a.member.rank}</span>
+                      <span className="block font-medium">{a.member.name}</span>
                     </div>
                   );
                 })}

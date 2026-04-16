@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAdmin(req);
-    const { name, startDate, endDate, memberIds } = await req.json();
+    const { name, startDate, endDate, memberIds, weekdayStartOffset, weekendAStartOffset, weekendBStartOffset } = await req.json();
 
     if (!name || !startDate || !endDate || !Array.isArray(memberIds)) {
       return NextResponse.json({ error: "필수 필드가 누락되었습니다." }, { status: 400 });
@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
         name,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
+        weekdayStartOffset: weekdayStartOffset ?? 0,
+        weekendAStartOffset: weekendAStartOffset ?? 0,
+        weekendBStartOffset: weekendBStartOffset ?? 0,
         cycleMembers: {
           create: memberIds.map((memberId: string, index: number) => ({
             memberId,

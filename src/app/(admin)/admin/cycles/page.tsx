@@ -12,9 +12,13 @@ interface Cycle {
   startDate: string;
   endDate: string;
   isActive: boolean;
+  weekdayStartOffset: number;
+  weekendAStartOffset: number;
+  weekendBStartOffset: number;
   cycleMembers: {
     member: { id: string; name: string; rank: string };
     sortOrder: number;
+    isExcluded: boolean;
   }[];
 }
 
@@ -66,10 +70,13 @@ export default function AdminCyclesPage() {
                   {format(new Date(cycle.endDate), "yyyy.MM.dd", { locale: ko })}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap justify-end">
                 <Button size="sm" onClick={() => generateSchedule(cycle.id)}>
                   편성 실행
                 </Button>
+                <Link href={`/admin/cycles/${cycle.id}/edit`}>
+                  <Button variant="secondary" size="sm">수정</Button>
+                </Link>
                 <Link href={`/admin/schedule?cycleId=${cycle.id}`}>
                   <Button variant="secondary" size="sm">근무표 보기</Button>
                 </Link>
@@ -77,14 +84,22 @@ export default function AdminCyclesPage() {
             </div>
 
             <div>
-              <p className="text-xs text-gray-400 mb-2">편성 순서 ({cycle.cycleMembers.length}명)</p>
+              <p className="text-xs text-gray-400 mb-2">
+                편성 순서 ({cycle.cycleMembers.filter((cm) => !cm.isExcluded).length}명 활성
+                {cycle.cycleMembers.some((cm) => cm.isExcluded) &&
+                  ` / ${cycle.cycleMembers.filter((cm) => cm.isExcluded).length}명 제외`})
+              </p>
               <div className="flex flex-wrap gap-2">
                 {cycle.cycleMembers
                   .sort((a, b) => a.sortOrder - b.sortOrder)
                   .map((cm, idx) => (
                     <span
                       key={cm.member.id}
-                      className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-700"
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        cm.isExcluded
+                          ? "bg-red-50 text-red-400 line-through"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
                     >
                       {idx + 1}. {cm.member.rank} {cm.member.name}
                     </span>

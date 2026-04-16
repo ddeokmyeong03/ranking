@@ -37,9 +37,10 @@ model Member {
   name             String
   rank             String
   position         String?
-  commissionDate   DateTime?
-  dischargeDate    DateTime?
-  role             MemberRole @default(USER)
+  commissionDate     DateTime?
+  dischargeDate      DateTime?
+  transferOrderDate  DateTime?   // 전출 인사명령일 (2주 전부터 제외)
+  role               MemberRole @default(USER)
   unitId           String
   unit             Unit       @relation(fields: [unitId], references: [id])
   isActive         Boolean    @default(true)
@@ -54,6 +55,7 @@ model Member {
   changeOffers     DutyChangeOffer[]
   sentRequests     DutyChangeRequest[]  @relation("Requester")
   receivedRequests DutyChangeRequest[]  @relation("RequestTarget")
+  leaves           MemberLeave[]
 }
 
 enum MemberRole {
@@ -83,15 +85,19 @@ model TrustedDevice {
 // =============================================
 
 model DutyCycle {
-  id         String   @id @default(cuid())
-  unitId     String
-  unit       Unit     @relation(fields: [unitId], references: [id])
-  name       String
-  startDate  DateTime @db.Date
-  endDate    DateTime @db.Date
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  unitId              String
+  unit                Unit     @relation(fields: [unitId], references: [id])
+  name                String
+  startDate           DateTime @db.Date
+  endDate             DateTime @db.Date
+  isActive            Boolean  @default(true)
+  // 3개 풀 시작 오프셋: 해당 풀의 몇 번째 멤버부터 시작할지 (0부터)
+  weekdayStartOffset  Int      @default(0)
+  weekendAStartOffset Int      @default(0)
+  weekendBStartOffset Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   cycleMembers DutyCycleMember[]
   assignments  DutyAssignment[]
@@ -131,6 +137,28 @@ model UnitHoliday {
 enum HolidayType {
   PUBLIC_HOLIDAY
   COMBAT_REST
+}
+
+// =============================================
+// MEMBER LEAVE (휴가/휴무)
+// =============================================
+
+model MemberLeave {
+  id         String    @id @default(cuid())
+  memberId   String
+  member     Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  startDate  DateTime  @db.Date
+  endDate    DateTime  @db.Date
+  leaveType  LeaveType
+  reason     String?
+  createdAt  DateTime  @default(now())
+
+  @@index([memberId, startDate, endDate])
+}
+
+enum LeaveType {
+  VACATION   // 휴가
+  DAY_OFF    // 휴무
 }
 
 // =============================================
@@ -283,5 +311,6 @@ enum NotificationType {
   REQUEST_RECEIVED
   REQUEST_APPROVED
   REQUEST_REJECTED
+  REQUEST_BLOCKED_LEAVE  // 휴가/휴무로 인한 교환 불가
   SWAP_COMPLETED
 }

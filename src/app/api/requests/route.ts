@@ -72,6 +72,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "본인에게는 요청할 수 없습니다." }, { status: 400 });
     }
 
+    // 상대방 휴가/휴무 여부 확인
+    const targetLeave = await prisma.memberLeave.findFirst({
+      where: {
+        memberId: targetAssignment.memberId,
+        startDate: { lte: targetAssignment.date },
+        endDate: { gte: targetAssignment.date },
+      },
+    });
+
+    if (targetLeave) {
+      const leaveLabel = targetLeave.leaveType === "VACATION" ? "휴가" : "휴무";
+      return NextResponse.json(
+        {
+          error: `상대방이 해당 날짜에 ${leaveLabel} 중이므로 당직을 교환할 수 없습니다.`,
+          blockedByLeave: true,
+        },
+        { status: 409 }
+      );
+    }
+
     const request = await prisma.dutyChangeRequest.create({
       data: {
         requesterId: session.memberId,
