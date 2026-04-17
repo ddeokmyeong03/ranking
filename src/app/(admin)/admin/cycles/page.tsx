@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { AdminBackButton } from "@/components/Admin/AdminBackButton";
 
 interface Cycle {
   id: string;
@@ -20,6 +21,14 @@ interface Cycle {
     sortOrder: number;
     isExcluded: boolean;
   }[];
+}
+
+function isCurrentlyActive(cycle: Cycle): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(cycle.startDate);
+  const end = new Date(cycle.endDate);
+  return start <= today && today <= end;
 }
 
 export default function AdminCyclesPage() {
@@ -44,6 +53,7 @@ export default function AdminCyclesPage() {
 
   return (
     <div className="space-y-5">
+      <AdminBackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">사이클 관리</h1>
         <Link href="/admin/cycles/new">
@@ -106,6 +116,16 @@ export default function AdminCyclesPage() {
                   ))}
               </div>
             </div>
+
+            {/* 현재 편성중 표시 */}
+            {isCurrentlyActive(cycle) && (
+              <div className="flex justify-end">
+                <span className="inline-flex items-center gap-1.5 text-xs text-green-700 font-medium">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  현재 편성중
+                </span>
+              </div>
+            )}
           </div>
         ))
       )}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { AdminBackButton } from "@/components/Admin/AdminBackButton";
 
 interface Member {
   id: string;
@@ -103,6 +104,7 @@ export default function NewCyclePage() {
 
   return (
     <div className="space-y-6">
+      <AdminBackButton />
       <h1 className="text-2xl font-bold text-gray-900">새 사이클 생성</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">

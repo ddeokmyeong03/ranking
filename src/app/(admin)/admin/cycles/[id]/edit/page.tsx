@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { subDays, subMonths, format } from "date-fns";
+import { AdminBackButton } from "@/components/Admin/AdminBackButton";
 
 interface MemberInCycle {
   id: string;
@@ -182,12 +183,8 @@ export default function EditCyclePage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-600">
-          ←
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">사이클 수정</h1>
-      </div>
+      <AdminBackButton />
+      <h1 className="text-2xl font-bold text-gray-900">사이클 수정</h1>
 
       {/* 기본 정보 */}
       <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">

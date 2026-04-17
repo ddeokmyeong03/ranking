@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { AdminBackButton } from "@/components/Admin/AdminBackButton";
 
 interface Holiday {
   id: string;
@@ -65,6 +66,7 @@ export default function AdminHolidaysPage() {
 
   return (
     <div className="space-y-6">
+      <AdminBackButton />
       <h1 className="text-2xl font-bold text-gray-900">공휴일 / 전투휴무 관리</h1>
 
       <form onSubmit={handleAdd} className="bg-white rounded-xl shadow-sm p-5 space-y-4">

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatKRW } from "@/lib/utils";
 import { DutyType } from "@prisma/client";
+import { AdminBackButton } from "@/components/Admin/AdminBackButton";
 
 interface Rate {
   id: string;
@@ -71,6 +72,7 @@ export default function AdminAllowancesPage() {
 
   return (
     <div className="space-y-6">
+      <AdminBackButton />
       <h1 className="text-2xl font-bold text-gray-900">수당 요율 설정</h1>
 
       <form onSubmit={handleAdd} className="bg-white rounded-xl shadow-sm p-5 space-y-4">

@@ -98,6 +98,9 @@ export default function DashboardPage() {
       setLeaveModal(false);
       setLeaveForm({ startDate: "", endDate: "", leaveType: "VACATION", reason: "" });
       loadLeaves();
+      if (d.autoListingCount > 0) {
+        alert(`휴가/휴무가 등록되었습니다.\n해당 기간 내 근무 ${d.autoListingCount}건에 대해 자동으로 변경 희망이 등록되었습니다.`);
+      }
     } catch {
       setLeaveError("서버 오류가 발생했습니다.");
     } finally {

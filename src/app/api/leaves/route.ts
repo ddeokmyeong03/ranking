@@ -69,18 +69,51 @@ export async function POST(req: NextRequest) {
         ? targetMemberId
         : session.memberId;
 
+    const leaveStart = new Date(startDate);
+    const leaveEnd = new Date(endDate);
+
     const leave = await prisma.memberLeave.create({
       data: {
         memberId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: leaveStart,
+        endDate: leaveEnd,
         leaveType,
         reason: reason ?? null,
       },
       include: { member: { select: { id: true, name: true, rank: true } } },
     });
 
-    return NextResponse.json(leave, { status: 201 });
+    // 해당 기간 내 배정된 근무를 조회하여 아직 변경 희망이 없는 것들을 자동 등록
+    const dutiesInPeriod = await prisma.dutyAssignment.findMany({
+      where: {
+        memberId,
+        date: { gte: leaveStart, lte: leaveEnd },
+      },
+    });
+
+    const autoListingIds: string[] = [];
+    for (const duty of dutiesInPeriod) {
+      // 이미 OPEN 상태 변경 희망 게시글이 있으면 스킵
+      const existing = await prisma.dutyChangeListing.findFirst({
+        where: { assignmentId: duty.id, status: "OPEN" },
+      });
+      if (existing) continue;
+
+      await prisma.dutyChangeListing.create({
+        data: {
+          assignmentId: duty.id,
+          posterId: memberId,
+          message: `${leaveType === "VACATION" ? "휴가" : "휴무"} 로 인한 자동 변경 희망 등록`,
+          status: "OPEN",
+        },
+      });
+      autoListingIds.push(duty.id);
+    }
+
+    return NextResponse.json(
+      { ...leave, autoListingCount: autoListingIds.length },
+      { status: 201 }
+    );
   } catch (e: unknown) {
     if (e instanceof Error && (e.message === "Unauthorized" || e.message === "Forbidden")) {
       return NextResponse.json({ error: e.message }, { status: e.message === "Unauthorized" ? 401 : 403 });

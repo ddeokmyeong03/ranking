@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { DutyCalendar } from "@/components/DutyCalendar/DutyCalendar";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AdminBackButton } from "@/components/Admin/AdminBackButton";
 
 export default function AdminSchedulePage() {
   const now = new Date();
@@ -35,6 +36,7 @@ export default function AdminSchedulePage() {
 
   return (
     <div className="space-y-4">
+      <AdminBackButton />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">근무표 (관리자)</h1>
         <div className="flex items-center gap-2">

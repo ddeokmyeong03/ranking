@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { AdminBackButton } from "@/components/Admin/AdminBackButton";
 
 interface Member {
   id: string;
@@ -49,63 +50,70 @@ export default function AdminMembersPage() {
 
   return (
     <div className="space-y-5">
+      <AdminBackButton />
       <h1 className="text-2xl font-bold text-gray-900">간부 관리</h1>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-5 py-3 text-gray-500 font-medium">이름</th>
-              <th className="text-left px-5 py-3 text-gray-500 font-medium">군번</th>
-              <th className="text-left px-5 py-3 text-gray-500 font-medium">보직</th>
-              <th className="text-left px-5 py-3 text-gray-500 font-medium">역할</th>
-              <th className="text-left px-5 py-3 text-gray-500 font-medium">상태</th>
-              <th className="px-5 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {members.map((m) => (
-              <tr key={m.id} className={!m.isActive ? "opacity-50" : ""}>
-                <td className="px-5 py-3 font-medium text-gray-900">
-                  {m.rank} {m.name}
-                </td>
-                <td className="px-5 py-3 text-gray-500 font-mono">{m.militaryId}</td>
-                <td className="px-5 py-3 text-gray-500">{m.position ?? "—"}</td>
-                <td className="px-5 py-3">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      m.role === "UNIT_ADMIN"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {m.role === "UNIT_ADMIN" ? "관리자" : "일반"}
-                  </span>
-                </td>
-                <td className="px-5 py-3">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      m.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-                    }`}
-                  >
-                    {m.isActive ? "활성" : "비활성"}
-                  </span>
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => toggleRole(m)}>
-                      {m.role === "UNIT_ADMIN" ? "일반 전환" : "관리자 전환"}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => toggleActive(m)}>
-                      {m.isActive ? "비활성화" : "활성화"}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-3">
+        {members.map((m) => (
+          <div
+            key={m.id}
+            className={`bg-white rounded-xl shadow-sm p-4 ${!m.isActive ? "opacity-60" : ""}`}
+          >
+            {/* 상단: 이름 + 상태 배지 */}
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="font-semibold text-gray-900">{m.rank} {m.name}</p>
+                <p className="text-xs text-gray-400 font-mono mt-0.5">{m.militaryId}</p>
+                {m.position && (
+                  <p className="text-xs text-gray-500 mt-0.5">{m.position}</p>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    m.role === "UNIT_ADMIN"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {m.role === "UNIT_ADMIN" ? "관리자" : "일반"}
+                </span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    m.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                  }`}
+                >
+                  {m.isActive ? "활성" : "비활성"}
+                </span>
+              </div>
+            </div>
+
+            {/* 하단: 액션 버튼 */}
+            <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => toggleRole(m)}
+              >
+                {m.role === "UNIT_ADMIN" ? "일반으로 전환" : "관리자로 전환"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => toggleActive(m)}
+              >
+                {m.isActive ? "비활성화" : "활성화"}
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {members.length === 0 && (
+        <p className="text-center text-gray-400 py-8">등록된 간부가 없습니다.</p>
+      )}
     </div>
   );
 }
